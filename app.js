@@ -33,7 +33,8 @@
     "hive.is",
     "mwt.net",
     "ufba.br",
-    "telefornica.net"
+    "telefornica.net",
+    "hawaiiantel.net"
   ].map(d => d.toLowerCase());
 
   const BLOCKED_TLDS = [".cc", ".ru", ".jp", ".pl", ".fr"];
