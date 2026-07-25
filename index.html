@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Email Extractor - Upload your text file and extract clean email addresses instantly. Fast, private, and free.">
+  <title>Email Extractor — Extract Emails Instantly</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Animated background orbs -->
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="header" id="header">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2"/>
+            <path d="M22 7l-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+          </svg>
+        </div>
+        <span class="logo-text">Email Extractor</span>
+      </div>
+      <div class="badge">
+        <span class="badge-dot"></span>
+        100% Private — No Data Stored
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
+      <h1>Extract Emails<br><span class="gradient-text">In Seconds</span></h1>
+      <p class="hero-subtitle">Upload your text file with email:password records and get a clean list of emails — instantly downloaded.</p>
+    </section>
+
+    <!-- Upload Section -->
+    <section class="upload-section" id="upload-section">
+      <div class="card upload-card" id="upload-card">
+        <div class="card-glow"></div>
+
+        <!-- Step Indicator -->
+        <div class="steps" id="steps">
+          <div class="step active" id="step-1-indicator">
+            <div class="step-number">1</div>
+            <span>Upload</span>
+          </div>
+          <div class="step-line" id="step-line"></div>
+          <div class="step" id="step-2-indicator">
+            <div class="step-number">2</div>
+            <span>Extract</span>
+          </div>
+          <div class="step-line" id="step-line-2"></div>
+          <div class="step" id="step-3-indicator">
+            <div class="step-number">3</div>
+            <span>Download</span>
+          </div>
+        </div>
+
+        <!-- Upload Area -->
+        <div id="upload-area" class="upload-area">
+          <div class="upload-dropzone" id="dropzone">
+            <div class="dropzone-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </div>
+            <h3>Drop your file here</h3>
+            <p>or click to browse</p>
+            <div class="file-types">
+              <span class="file-badge">.txt</span>
+              <span class="file-badge">.csv</span>
+              <span class="file-badge">.log</span>
+            </div>
+            <input type="file" id="file-input" accept=".txt,.csv,.log" hidden>
+          </div>
+        </div>
+
+        <!-- File Info (shown after upload) -->
+        <div id="file-info" class="file-info hidden">
+          <div class="file-info-card">
+            <div class="file-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+            </div>
+            <div class="file-details">
+              <span class="file-name" id="file-name">input.txt</span>
+              <span class="file-size" id="file-size">0 KB</span>
+            </div>
+            <button class="btn-remove" id="btn-remove" title="Remove file">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Extract Button -->
+        <button class="btn-extract hidden" id="btn-extract">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          Extract Emails
+        </button>
+
+        <!-- Processing Animation -->
+        <div id="processing" class="processing hidden">
+          <div class="processing-spinner">
+            <div class="spinner-ring"></div>
+          </div>
+          <p class="processing-text">Extracting emails...</p>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results" class="results hidden">
+          <div class="results-stats">
+            <div class="stat">
+              <div class="stat-value" id="stat-total">0</div>
+              <div class="stat-label">Total Lines</div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat">
+              <div class="stat-value" id="stat-extracted">0</div>
+              <div class="stat-label">Emails Found</div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat">
+              <div class="stat-value" id="stat-skipped">0</div>
+              <div class="stat-label">Lines Skipped</div>
+            </div>
+          </div>
+
+          <!-- Preview -->
+          <div class="preview-section">
+            <div class="preview-header">
+              <h3>Preview</h3>
+              <span class="preview-badge" id="preview-count">First 10 emails</span>
+            </div>
+            <div class="preview-list" id="preview-list"></div>
+          </div>
+
+          <!-- Download Button -->
+          <button class="btn-download" id="btn-download">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download output.txt
+          </button>
+
+          <!-- Start Over -->
+          <button class="btn-reset" id="btn-reset">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1 4 1 10 7 10"/>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+            </svg>
+            Start Over
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="how-it-works" id="how-it-works">
+      <h2>How It Works</h2>
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-card-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <h3>Upload File</h3>
+          <p>Upload your input.txt containing email:password pairs</p>
+        </div>
+        <div class="step-card">
+          <div class="step-card-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 18 22 12 16 6"/>
+              <polyline points="8 6 2 12 8 18"/>
+            </svg>
+          </div>
+          <h3>Auto Extract</h3>
+          <p>We parse each line and extract clean email addresses</p>
+        </div>
+        <div class="step-card">
+          <div class="step-card-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </div>
+          <h3>Download</h3>
+          <p>Get your output.txt with one email per line, ready to use</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer" id="footer">
+      <p>Built with ♥ — Your data never leaves your browser</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
