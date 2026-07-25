@@ -32,7 +32,8 @@
     "sion",
     "hive.is",
     "mwt.net",
-    "ufba.br"
+    "ufba.br",
+    "telefornica.net"
   ].map(d => d.toLowerCase());
 
   const BLOCKED_TLDS = [".cc", ".ru", ".jp", ".pl", ".fr"];
@@ -219,7 +220,9 @@
       let skipped = 0;
       let blockedCount = 0;
       let digitCount = 0;
+      let domainLimitCount = 0;
       extractedEmails = [];
+      const domainCounts = {};
 
       const CHUNK_SIZE = 5000;
       let currentIndex = 0;
@@ -268,6 +271,15 @@
             continue;
           }
 
+          if (domain) {
+            const dLower = domain.toLowerCase();
+            domainCounts[dLower] = (domainCounts[dLower] || 0) + 1;
+            if (domainCounts[dLower] > 3) {
+              domainLimitCount++;
+              continue;
+            }
+          }
+
           extractedEmails.push(trimmed);
         }
 
@@ -278,7 +290,7 @@
         progressPercent.textContent = pct + '%';
         progressLines.textContent = currentIndex.toLocaleString() + ' / ' + totalLines.toLocaleString() + ' lines';
         liveEmailCount.textContent = extractedEmails.length.toLocaleString();
-        liveFilteredCount.textContent = (duplicateCount + blockedCount + digitCount + skipped).toLocaleString();
+        liveFilteredCount.textContent = (duplicateCount + blockedCount + digitCount + skipped + domainLimitCount).toLocaleString();
 
         if (currentIndex < totalLines) {
           setTimeout(processChunk, 0);
