@@ -25,10 +25,16 @@
     "gmail",
     "garmerspace",
     "vnetwork",
-    "sina"
+    "sina",
+    "freenet.de",
+    "net.de",
+    "wctc.net",
+    "sion",
+    "hive.is",
+    "mwt.net"
   ].map(d => d.toLowerCase());
 
-  const BLOCKED_TLDS = [".cc", ".ru", ".jp", ".pl"];
+  const BLOCKED_TLDS = [".cc", ".ru", ".jp", ".pl", ".fr"];
 
   function isDomainBlocked(domain) {
     const d = domain.toLowerCase();
