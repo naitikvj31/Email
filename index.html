@@ -124,7 +124,20 @@
           <div class="processing-spinner">
             <div class="spinner-ring"></div>
           </div>
-          <p class="processing-text">Extracting emails...</p>
+          <p class="processing-text" id="processing-text">Reading file...</p>
+          <div class="progress-bar-container" id="progress-bar-container">
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" id="progress-bar-fill"></div>
+            </div>
+            <div class="progress-details">
+              <span id="progress-percent">0%</span>
+              <span id="progress-lines">0 lines</span>
+            </div>
+            <div class="progress-live-stats">
+              <span>✉ Emails found: <strong id="live-email-count">0</strong></span>
+              <span>🚫 Filtered: <strong id="live-filtered-count">0</strong></span>
+            </div>
+          </div>
         </div>
 
         <!-- Results Section -->

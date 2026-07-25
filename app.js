@@ -33,6 +33,7 @@
     const d = domain.toLowerCase();
     const dotCount = (d.match(/\./g) || []).length;
     if (dotCount >= 2) return true;
+    if (d.includes('-')) return true;
     for (const tld of BLOCKED_TLDS) {
       if (d.endsWith(tld)) return true;
     }
@@ -170,114 +171,137 @@
     processing.classList.remove('hidden');
     setStep(2);
 
+    const progressBar = document.getElementById('progress-bar-fill');
+    const progressPercent = document.getElementById('progress-percent');
+    const progressLines = document.getElementById('progress-lines');
+    const processingText = document.getElementById('processing-text');
+    const liveEmailCount = document.getElementById('live-email-count');
+    const liveFilteredCount = document.getElementById('live-filtered-count');
+
+    progressBar.style.width = '0%';
+    progressPercent.textContent = '0%';
+    progressLines.textContent = '0 lines';
+    liveEmailCount.textContent = '0';
+    liveFilteredCount.textContent = '0';
+    processingText.textContent = 'Reading file...';
+
     const reader = new FileReader();
 
     reader.onload = function (e) {
       const text = e.target.result;
+      const lines = text.split(/\r?\n/).filter((line) => line.trim() !== '');
+      const totalLines = lines.length;
 
-      setTimeout(() => {
-        const lines = text.split(/\r?\n/).filter((line) => line.trim() !== '');
+      processingText.textContent = 'Extracting & filtering...';
 
-        const uniqueLines = [];
-        const seenLines = new Set();
-        let duplicateCount = 0;
+      const uniqueLines = [];
+      const seenLines = new Set();
+      let duplicateCount = 0;
+      let skipped = 0;
+      let blockedCount = 0;
+      let digitCount = 0;
+      extractedEmails = [];
 
-        lines.forEach((line) => {
-          const normalized = line.trim().toLowerCase();
+      const CHUNK_SIZE = 5000;
+      let currentIndex = 0;
+
+      function processChunk() {
+        const end = Math.min(currentIndex + CHUNK_SIZE, totalLines);
+
+        for (let i = currentIndex; i < end; i++) {
+          const trimmed = lines[i].trim();
+          if (!trimmed) continue;
+
+          const normalized = trimmed.toLowerCase();
           if (seenLines.has(normalized)) {
             duplicateCount++;
-          } else {
-            seenLines.add(normalized);
-            uniqueLines.push(line.trim());
+            continue;
           }
-        });
-
-
-        const allEmails = [];
-        let skipped = 0;
-
-        uniqueLines.forEach((trimmed) => {
-          if (!trimmed) return;
-
+          seenLines.add(normalized);
 
           const parts = trimmed.split(/[:;|,\t]/);
           const candidate = parts[0].trim();
-
+          let email = null;
 
           if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidate)) {
-            allEmails.push(candidate);
+            email = candidate;
           } else {
-
             const emailMatch = trimmed.match(/[^\s@:;|,]+@[^\s@:;|,]+\.[^\s@:;|,]+/);
             if (emailMatch) {
-              allEmails.push(emailMatch[0]);
+              email = emailMatch[0];
             } else {
               skipped++;
+              continue;
             }
           }
-        });
 
-        let blockedCount = 0;
-        const afterBlocked = allEmails.filter((email) => {
           const domain = email.split('@')[1];
           if (domain && isDomainBlocked(domain)) {
             blockedCount++;
-            return false;
+            continue;
           }
-          return true;
-        });
-
-        let digitCount = 0;
-        extractedEmails = afterBlocked.filter((email) => {
-          const domain = email.split('@')[1];
           if (domain && domainHasDigit(domain)) {
             digitCount++;
-            return false;
+            continue;
           }
-          return true;
-        });
 
-        processing.classList.add('hidden');
-        results.classList.remove('hidden');
-        setStep(3);
-
-
-        animateCounter(statTotal, lines.length);
-        animateCounter(statDuplicates, duplicateCount);
-        animateCounter(statBlocked, blockedCount);
-        animateCounter(statDigit, digitCount);
-        animateCounter(statSkipped, skipped);
-        animateCounter(statExtracted, extractedEmails.length);
-
-
-        const previewEmails = extractedEmails.slice(0, 10);
-        const remaining = extractedEmails.length - previewEmails.length;
-        previewCount.textContent =
-          remaining > 0
-            ? `First ${previewEmails.length} of ${extractedEmails.length}`
-            : `${extractedEmails.length} email${extractedEmails.length !== 1 ? 's' : ''}`;
-
-        previewList.innerHTML = '';
-        previewEmails.forEach((email, i) => {
-          const item = document.createElement('div');
-          item.className = 'preview-item';
-          item.innerHTML = `
-            <span class="preview-item-number">${i + 1}.</span>
-            <span class="preview-item-email">${escapeHtml(email)}</span>
-          `;
-          previewList.appendChild(item);
-        });
-
-        if (remaining > 0) {
-          const moreItem = document.createElement('div');
-          moreItem.className = 'preview-item';
-          moreItem.style.justifyContent = 'center';
-          moreItem.style.color = 'var(--text-muted)';
-          moreItem.style.fontFamily = 'inherit';
-          moreItem.textContent = `… and ${remaining} more`;
-          previewList.appendChild(moreItem);
+          extractedEmails.push(email);
         }
-      }, 800);
+
+        currentIndex = end;
+
+        const pct = Math.round((currentIndex / totalLines) * 100);
+        progressBar.style.width = pct + '%';
+        progressPercent.textContent = pct + '%';
+        progressLines.textContent = currentIndex.toLocaleString() + ' / ' + totalLines.toLocaleString() + ' lines';
+        liveEmailCount.textContent = extractedEmails.length.toLocaleString();
+        liveFilteredCount.textContent = (duplicateCount + blockedCount + digitCount + skipped).toLocaleString();
+
+        if (currentIndex < totalLines) {
+          setTimeout(processChunk, 0);
+        } else {
+          processing.classList.add('hidden');
+          results.classList.remove('hidden');
+          setStep(3);
+
+          animateCounter(statTotal, totalLines);
+          animateCounter(statDuplicates, duplicateCount);
+          animateCounter(statBlocked, blockedCount);
+          animateCounter(statDigit, digitCount);
+          animateCounter(statSkipped, skipped);
+          animateCounter(statExtracted, extractedEmails.length);
+
+          const previewEmails = extractedEmails.slice(0, 10);
+          const remaining = extractedEmails.length - previewEmails.length;
+          previewCount.textContent =
+            remaining > 0
+              ? `First ${previewEmails.length} of ${extractedEmails.length}`
+              : `${extractedEmails.length} email${extractedEmails.length !== 1 ? 's' : ''}`;
+
+          previewList.innerHTML = '';
+          previewEmails.forEach((email, i) => {
+            const item = document.createElement('div');
+            item.className = 'preview-item';
+            item.innerHTML = `
+              <span class="preview-item-number">${i + 1}.</span>
+              <span class="preview-item-email">${escapeHtml(email)}</span>
+            `;
+            previewList.appendChild(item);
+          });
+
+          if (remaining > 0) {
+            const moreItem = document.createElement('div');
+            moreItem.className = 'preview-item';
+            moreItem.style.justifyContent = 'center';
+            moreItem.style.color = 'var(--text-muted)';
+            moreItem.style.fontFamily = 'inherit';
+            moreItem.textContent = `… and ${remaining} more`;
+            previewList.appendChild(moreItem);
+          }
+        }
+      }
+
+      processChunk();
     };
 
     reader.readAsText(selectedFile);
