@@ -64,7 +64,7 @@
   const BLOCKED_USERNAMES = [
     "admin", "contact", "user", "hello", "help",
     "candidate", "support", "shop", "validate", "verify",
-    "office", "mail"
+    "office", "mail", "postmaster", "info"
   ];
 
   function isUsernameBlocked(email) {
