@@ -22,10 +22,12 @@
     "yahoo",
     "hotmail",
     "gmail",
-    "garmerspace"
+    "garmerspace",
+    "vnetwork",
+    "sina"
   ].map(d => d.toLowerCase());
 
-  const BLOCKED_TLDS = [".cc", ".ru", ".jp"];
+  const BLOCKED_TLDS = [".cc", ".ru", ".jp", ".pl"];
 
   function isDomainBlocked(domain) {
     const d = domain.toLowerCase();
