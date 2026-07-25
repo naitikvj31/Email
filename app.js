@@ -31,7 +31,8 @@
     "wctc.net",
     "sion",
     "hive.is",
-    "mwt.net"
+    "mwt.net",
+    "ufba.br"
   ].map(d => d.toLowerCase());
 
   const BLOCKED_TLDS = [".cc", ".ru", ".jp", ".pl", ".fr"];
