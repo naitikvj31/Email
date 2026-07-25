@@ -267,7 +267,7 @@
             continue;
           }
 
-          extractedEmails.push(email);
+          extractedEmails.push(trimmed);
         }
 
         currentIndex = end;
