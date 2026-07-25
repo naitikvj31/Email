@@ -51,6 +51,16 @@
     return /\d/.test(domain);
   }
 
+  const BLOCKED_USERNAMES = [
+    "admin", "contact", "user", "hello", "help",
+    "candidate", "support", "shop", "validate", "verify"
+  ];
+
+  function isUsernameBlocked(email) {
+    const localPart = email.split('@')[0].toLowerCase();
+    return BLOCKED_USERNAMES.includes(localPart);
+  }
+
   const dropzone = document.getElementById('dropzone');
   const fileInput = document.getElementById('file-input');
   const uploadArea = document.getElementById('upload-area');
@@ -242,6 +252,10 @@
           }
           if (domain && domainHasDigit(domain)) {
             digitCount++;
+            continue;
+          }
+          if (isUsernameBlocked(email)) {
+            blockedCount++;
             continue;
           }
 
