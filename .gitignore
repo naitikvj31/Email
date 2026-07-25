@@ -1,0 +1,4 @@
+# Data files — too large for GitHub
+*.txt
+!README.md
+.DS_Store

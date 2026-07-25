@@ -1,13 +1,6 @@
-/**
- * Email Extractor — Application Logic
- * Extracts email addresses from email:password formatted text files.
- * Filters: duplicates, blocked domains, digits in domain.
- */
-
 (function () {
   'use strict';
 
-  // ---- Blocked Domains (case-insensitive) ----
   const BLOCKED_DOMAINS = [
     "t-online.de",
     "web.de",
@@ -30,33 +23,27 @@
     "gmail"
   ].map(d => d.toLowerCase());
 
-  /**
-   * Check if a domain is blocked.
-   * - Entries without a dot (e.g. "mail", "yahoo") → blocks any domain containing that string
-   * - Entries with a dot (e.g. "t-online.de") → blocks exact domain match
-   */
+  const BLOCKED_TLDS = [".cc", ".ru", ".jp"];
+
   function isDomainBlocked(domain) {
     const d = domain.toLowerCase();
+    for (const tld of BLOCKED_TLDS) {
+      if (d.endsWith(tld)) return true;
+    }
     for (const blocked of BLOCKED_DOMAINS) {
       if (blocked.includes('.')) {
-        // Exact domain match
         if (d === blocked) return true;
       } else {
-        // Partial/contains match
         if (d.includes(blocked)) return true;
       }
     }
     return false;
   }
 
-  /**
-   * Check if domain contains any digit (0-9)
-   */
   function domainHasDigit(domain) {
     return /\d/.test(domain);
   }
 
-  // ---- DOM Elements ----
   const dropzone = document.getElementById('dropzone');
   const fileInput = document.getElementById('file-input');
   const uploadArea = document.getElementById('upload-area');
@@ -72,7 +59,6 @@
   const previewList = document.getElementById('preview-list');
   const previewCount = document.getElementById('preview-count');
 
-  // Stats
   const statTotal = document.getElementById('stat-total');
   const statExtracted = document.getElementById('stat-extracted');
   const statSkipped = document.getElementById('stat-skipped');
@@ -80,18 +66,16 @@
   const statBlocked = document.getElementById('stat-blocked');
   const statDigit = document.getElementById('stat-digit');
 
-  // Step indicators
   const step1 = document.getElementById('step-1-indicator');
   const step2 = document.getElementById('step-2-indicator');
   const step3 = document.getElementById('step-3-indicator');
   const stepLine1 = document.getElementById('step-line');
   const stepLine2 = document.getElementById('step-line-2');
 
-  // ---- State ----
+
   let selectedFile = null;
   let extractedEmails = [];
 
-  // ---- Helpers ----
   function formatFileSize(bytes) {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
@@ -116,7 +100,6 @@
     function update(currentTime) {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      // Ease out quad
       const eased = 1 - (1 - progress) * (1 - progress);
       el.textContent = Math.round(start + (target - start) * eased);
       if (progress < 1) requestAnimationFrame(update);
@@ -125,7 +108,6 @@
     requestAnimationFrame(update);
   }
 
-  // ---- File Handling ----
   function handleFile(file) {
     if (!file) return;
 
@@ -139,7 +121,6 @@
     setStep(1);
   }
 
-  // Click to upload
   dropzone.addEventListener('click', () => fileInput.click());
 
   fileInput.addEventListener('change', (e) => {
@@ -148,7 +129,7 @@
     }
   });
 
-  // Drag & Drop
+
   dropzone.addEventListener('dragover', (e) => {
     e.preventDefault();
     dropzone.classList.add('drag-over');
@@ -166,7 +147,6 @@
     }
   });
 
-  // Remove file
   btnRemove.addEventListener('click', () => {
     selectedFile = null;
     fileInput.value = '';
@@ -176,11 +156,9 @@
     setStep(1);
   });
 
-  // ---- Extraction ----
   btnExtract.addEventListener('click', () => {
     if (!selectedFile) return;
 
-    // Show processing
     fileInfo.classList.add('hidden');
     btnExtract.classList.add('hidden');
     processing.classList.remove('hidden');
@@ -191,11 +169,9 @@
     reader.onload = function (e) {
       const text = e.target.result;
 
-      // Simulate a brief processing delay for UX
       setTimeout(() => {
         const lines = text.split(/\r?\n/).filter((line) => line.trim() !== '');
 
-        // --- Step 1: Remove duplicate lines ---
         const uniqueLines = [];
         const seenLines = new Set();
         let duplicateCount = 0;
@@ -210,22 +186,22 @@
           }
         });
 
-        // --- Step 2: Extract emails ---
+
         const allEmails = [];
         let skipped = 0;
 
         uniqueLines.forEach((trimmed) => {
           if (!trimmed) return;
 
-          // Try to extract email — supports : ; | , tab as delimiters
+
           const parts = trimmed.split(/[:;|,\t]/);
           const candidate = parts[0].trim();
 
-          // Basic email validation
+
           if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidate)) {
             allEmails.push(candidate);
           } else {
-            // Fallback: look for an email anywhere in the line
+
             const emailMatch = trimmed.match(/[^\s@:;|,]+@[^\s@:;|,]+\.[^\s@:;|,]+/);
             if (emailMatch) {
               allEmails.push(emailMatch[0]);
@@ -235,7 +211,6 @@
           }
         });
 
-        // --- Step 3: Filter blocked domains ---
         let blockedCount = 0;
         const afterBlocked = allEmails.filter((email) => {
           const domain = email.split('@')[1];
@@ -246,7 +221,6 @@
           return true;
         });
 
-        // --- Step 4: Filter domains containing digits ---
         let digitCount = 0;
         extractedEmails = afterBlocked.filter((email) => {
           const domain = email.split('@')[1];
@@ -257,12 +231,11 @@
           return true;
         });
 
-        // Hide processing, show results
         processing.classList.add('hidden');
         results.classList.remove('hidden');
         setStep(3);
 
-        // Animate stats
+
         animateCounter(statTotal, lines.length);
         animateCounter(statDuplicates, duplicateCount);
         animateCounter(statBlocked, blockedCount);
@@ -270,7 +243,7 @@
         animateCounter(statSkipped, skipped);
         animateCounter(statExtracted, extractedEmails.length);
 
-        // Preview
+
         const previewEmails = extractedEmails.slice(0, 10);
         const remaining = extractedEmails.length - previewEmails.length;
         previewCount.textContent =
@@ -304,7 +277,7 @@
     reader.readAsText(selectedFile);
   });
 
-  // ---- Download ----
+
   btnDownload.addEventListener('click', () => {
     if (extractedEmails.length === 0) return;
 
@@ -320,14 +293,12 @@
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    // Brief visual feedback on download button
     btnDownload.style.transform = 'scale(0.97)';
     setTimeout(() => {
       btnDownload.style.transform = '';
     }, 150);
   });
 
-  // ---- Reset ----
   btnReset.addEventListener('click', () => {
     selectedFile = null;
     extractedEmails = [];
@@ -343,7 +314,6 @@
     setStep(1);
   });
 
-  // ---- Utility ----
   function escapeHtml(str) {
     const div = document.createElement('div');
     div.textContent = str;
