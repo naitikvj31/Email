@@ -69,7 +69,8 @@
 
   function isUsernameBlocked(email) {
     const localPart = email.split('@')[0].toLowerCase();
-    return BLOCKED_USERNAMES.includes(localPart);
+    // Block if the localPart CONTAINS any of the blocked keywords
+    return BLOCKED_USERNAMES.some(blocked => localPart.includes(blocked));
   }
 
   const dropzone = document.getElementById('dropzone');
