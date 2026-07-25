@@ -16,17 +16,21 @@
     "pyrpyr.pl",
     "icn.od.ua",
     "thdby.com",
+    "gamerspace.online",
     "mail",
     "web",
     "yahoo",
     "hotmail",
-    "gmail"
+    "gmail",
+    "garmerspace"
   ].map(d => d.toLowerCase());
 
   const BLOCKED_TLDS = [".cc", ".ru", ".jp"];
 
   function isDomainBlocked(domain) {
     const d = domain.toLowerCase();
+    const dotCount = (d.match(/\./g) || []).length;
+    if (dotCount >= 2) return true;
     for (const tld of BLOCKED_TLDS) {
       if (d.endsWith(tld)) return true;
     }
