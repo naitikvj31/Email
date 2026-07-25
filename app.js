@@ -3,6 +3,7 @@
 
   const BLOCKED_DOMAINS = [
     "t-online.de",
+    "online.de",
     "web.de",
     "u2.com",
     "1.humail.club",
