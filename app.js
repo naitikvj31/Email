@@ -1,10 +1,60 @@
 /**
  * Email Extractor — Application Logic
  * Extracts email addresses from email:password formatted text files.
+ * Filters: duplicates, blocked domains, digits in domain.
  */
 
 (function () {
   'use strict';
+
+  // ---- Blocked Domains (case-insensitive) ----
+  const BLOCKED_DOMAINS = [
+    "t-online.de",
+    "web.de",
+    "u2.com",
+    "1.humail.club",
+    "chmail.ir",
+    "yandex.ru",
+    "mail.tmwlsw.com",
+    "escobarsrl.com",
+    "rambler.ru",
+    "xiangyunplay.com",
+    "miha33.com",
+    "pyrpyr.pl",
+    "icn.od.ua",
+    "thdby.com",
+    "mail",
+    "web",
+    "yahoo",
+    "hotmail",
+    "gmail"
+  ].map(d => d.toLowerCase());
+
+  /**
+   * Check if a domain is blocked.
+   * - Entries without a dot (e.g. "mail", "yahoo") → blocks any domain containing that string
+   * - Entries with a dot (e.g. "t-online.de") → blocks exact domain match
+   */
+  function isDomainBlocked(domain) {
+    const d = domain.toLowerCase();
+    for (const blocked of BLOCKED_DOMAINS) {
+      if (blocked.includes('.')) {
+        // Exact domain match
+        if (d === blocked) return true;
+      } else {
+        // Partial/contains match
+        if (d.includes(blocked)) return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Check if domain contains any digit (0-9)
+   */
+  function domainHasDigit(domain) {
+    return /\d/.test(domain);
+  }
 
   // ---- DOM Elements ----
   const dropzone = document.getElementById('dropzone');
@@ -26,6 +76,9 @@
   const statTotal = document.getElementById('stat-total');
   const statExtracted = document.getElementById('stat-extracted');
   const statSkipped = document.getElementById('stat-skipped');
+  const statDuplicates = document.getElementById('stat-duplicates');
+  const statBlocked = document.getElementById('stat-blocked');
+  const statDigit = document.getElementById('stat-digit');
 
   // Step indicators
   const step1 = document.getElementById('step-1-indicator');
@@ -141,11 +194,27 @@
       // Simulate a brief processing delay for UX
       setTimeout(() => {
         const lines = text.split(/\r?\n/).filter((line) => line.trim() !== '');
-        extractedEmails = [];
-        let skipped = 0;
+
+        // --- Step 1: Remove duplicate lines ---
+        const uniqueLines = [];
+        const seenLines = new Set();
+        let duplicateCount = 0;
 
         lines.forEach((line) => {
-          const trimmed = line.trim();
+          const normalized = line.trim().toLowerCase();
+          if (seenLines.has(normalized)) {
+            duplicateCount++;
+          } else {
+            seenLines.add(normalized);
+            uniqueLines.push(line.trim());
+          }
+        });
+
+        // --- Step 2: Extract emails ---
+        const allEmails = [];
+        let skipped = 0;
+
+        uniqueLines.forEach((trimmed) => {
           if (!trimmed) return;
 
           // Try to extract email — supports : ; | , tab as delimiters
@@ -154,16 +223,38 @@
 
           // Basic email validation
           if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidate)) {
-            extractedEmails.push(candidate);
+            allEmails.push(candidate);
           } else {
             // Fallback: look for an email anywhere in the line
             const emailMatch = trimmed.match(/[^\s@:;|,]+@[^\s@:;|,]+\.[^\s@:;|,]+/);
             if (emailMatch) {
-              extractedEmails.push(emailMatch[0]);
+              allEmails.push(emailMatch[0]);
             } else {
               skipped++;
             }
           }
+        });
+
+        // --- Step 3: Filter blocked domains ---
+        let blockedCount = 0;
+        const afterBlocked = allEmails.filter((email) => {
+          const domain = email.split('@')[1];
+          if (domain && isDomainBlocked(domain)) {
+            blockedCount++;
+            return false;
+          }
+          return true;
+        });
+
+        // --- Step 4: Filter domains containing digits ---
+        let digitCount = 0;
+        extractedEmails = afterBlocked.filter((email) => {
+          const domain = email.split('@')[1];
+          if (domain && domainHasDigit(domain)) {
+            digitCount++;
+            return false;
+          }
+          return true;
         });
 
         // Hide processing, show results
@@ -173,8 +264,11 @@
 
         // Animate stats
         animateCounter(statTotal, lines.length);
-        animateCounter(statExtracted, extractedEmails.length);
+        animateCounter(statDuplicates, duplicateCount);
+        animateCounter(statBlocked, blockedCount);
+        animateCounter(statDigit, digitCount);
         animateCounter(statSkipped, skipped);
+        animateCounter(statExtracted, extractedEmails.length);
 
         // Preview
         const previewEmails = extractedEmails.slice(0, 10);
@@ -256,3 +350,4 @@
     return div.innerHTML;
   }
 })();
+

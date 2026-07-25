@@ -129,20 +129,30 @@
 
         <!-- Results Section -->
         <div id="results" class="results hidden">
-          <div class="results-stats">
+          <div class="results-stats-grid">
             <div class="stat">
               <div class="stat-value" id="stat-total">0</div>
               <div class="stat-label">Total Lines</div>
             </div>
-            <div class="stat-divider"></div>
             <div class="stat">
-              <div class="stat-value" id="stat-extracted">0</div>
-              <div class="stat-label">Emails Found</div>
+              <div class="stat-value stat-warn" id="stat-duplicates">0</div>
+              <div class="stat-label">Duplicates</div>
             </div>
-            <div class="stat-divider"></div>
             <div class="stat">
-              <div class="stat-value" id="stat-skipped">0</div>
-              <div class="stat-label">Lines Skipped</div>
+              <div class="stat-value stat-warn" id="stat-blocked">0</div>
+              <div class="stat-label">Blocked Domain</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value stat-warn" id="stat-digit">0</div>
+              <div class="stat-label">Digit in Domain</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value stat-warn" id="stat-skipped">0</div>
+              <div class="stat-label">Invalid</div>
+            </div>
+            <div class="stat stat-highlight">
+              <div class="stat-value stat-success" id="stat-extracted">0</div>
+              <div class="stat-label">Clean Emails</div>
             </div>
           </div>
 
