@@ -42,7 +42,10 @@
     "mwt.net",
     "ufba.br",
     "telefornica.net",
-    "hawaiiantel.net"
+    "hawaiiantel.net",
+    "cheapnet.it",
+    "mclink.it",
+    "magenta.de"
   ].map(d => d.toLowerCase());
 
   const BLOCKED_TLDS = [".cc", ".ru", ".jp", ".pl", ".fr"];
