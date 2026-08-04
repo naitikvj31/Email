@@ -103,6 +103,68 @@
     return /\d/.test(domain);
   }
 
+  // ---- Dead-domain (DNS liveness) check via DNS-over-HTTPS ----
+  const dnsCache = new Map();
+
+  async function dohQuery(domain, type) {
+    const url =
+      'https://cloudflare-dns.com/dns-query?name=' +
+      encodeURIComponent(domain) + '&type=' + type;
+    const res = await fetch(url, { headers: { accept: 'application/dns-json' } });
+    if (!res.ok) throw new Error('DoH ' + res.status);
+    return res.json();
+  }
+
+  // Returns true if the domain can plausibly receive mail (has MX, or A/AAAA
+  // as a fallback). On any network/parse error we return true so a flaky
+  // lookup never silently drops a valid email.
+  async function lookupAlive(domain) {
+    try {
+      const mx = await dohQuery(domain, 'MX');
+      if (mx.Status === 3) return false; // NXDOMAIN -> domain doesn't exist
+      if (mx.Answer && mx.Answer.some(a => a.type === 15)) return true;
+      const a = await dohQuery(domain, 'A');
+      if (a.Status === 3) return false;
+      if (a.Answer && a.Answer.some(r => r.type === 1)) return true;
+      return false; // resolves but no MX and no A -> can't receive mail
+    } catch (e) {
+      return true; // unknown -> keep the email
+    }
+  }
+
+  async function domainIsAlive(domain) {
+    if (dnsCache.has(domain)) return dnsCache.get(domain);
+    const alive = await lookupAlive(domain);
+    dnsCache.set(domain, alive);
+    return alive;
+  }
+
+  // Check a list of domains with a small concurrency pool. Returns a Set of
+  // domains that are dead. Calls onProgress(done, total) after each check.
+  async function findDeadDomains(domains, onProgress) {
+    const dead = new Set();
+    const CONCURRENCY = 8;
+    let idx = 0;
+    let done = 0;
+
+    async function worker() {
+      while (idx < domains.length) {
+        const d = domains[idx++];
+        const alive = await domainIsAlive(d);
+        if (!alive) dead.add(d);
+        done++;
+        if (onProgress) onProgress(done, domains.length);
+      }
+    }
+
+    const workers = [];
+    for (let i = 0; i < Math.min(CONCURRENCY, domains.length); i++) {
+      workers.push(worker());
+    }
+    await Promise.all(workers);
+    return dead;
+  }
+
   const BLOCKED_USERNAMES = [
     "admin", "contact", "user", "hello", "help",
     "candidate", "support", "shop", "validate", "verify",
@@ -136,6 +198,11 @@
   const statDuplicates = document.getElementById('stat-duplicates');
   const statBlocked = document.getElementById('stat-blocked');
   const statDigit = document.getElementById('stat-digit');
+  const statDead = document.getElementById('stat-dead');
+  const statDeadCard = document.getElementById('stat-dead-card');
+
+  const optionsPanel = document.getElementById('options');
+  const optDnsCheck = document.getElementById('opt-dns-check');
 
   const step1 = document.getElementById('step-1-indicator');
   const step2 = document.getElementById('step-2-indicator');
@@ -146,6 +213,7 @@
 
   let selectedFile = null;
   let extractedEmails = [];
+  let extractedDomains = [];
 
   function formatFileSize(bytes) {
     if (bytes < 1024) return bytes + ' B';
@@ -188,6 +256,7 @@
 
     uploadArea.classList.add('hidden');
     fileInfo.classList.remove('hidden');
+    optionsPanel.classList.remove('hidden');
     btnExtract.classList.remove('hidden');
     setStep(1);
   }
@@ -222,6 +291,7 @@
     selectedFile = null;
     fileInput.value = '';
     fileInfo.classList.add('hidden');
+    optionsPanel.classList.add('hidden');
     btnExtract.classList.add('hidden');
     uploadArea.classList.remove('hidden');
     setStep(1);
@@ -230,7 +300,10 @@
   btnExtract.addEventListener('click', () => {
     if (!selectedFile) return;
 
+    const dnsCheckEnabled = optDnsCheck.checked;
+
     fileInfo.classList.add('hidden');
+    optionsPanel.classList.add('hidden');
     btnExtract.classList.add('hidden');
     processing.classList.remove('hidden');
     setStep(2);
@@ -265,7 +338,9 @@
       let blockedCount = 0;
       let digitCount = 0;
       let domainLimitCount = 0;
+      let deadCount = 0;
       extractedEmails = [];
+      extractedDomains = [];
       const domainCounts = {};
 
       const CHUNK_SIZE = 5000;
@@ -325,6 +400,7 @@
           }
 
           extractedEmails.push(trimmed);
+          extractedDomains.push(domain ? domain.toLowerCase() : '');
         }
 
         currentIndex = end;
@@ -338,18 +414,59 @@
 
         if (currentIndex < totalLines) {
           setTimeout(processChunk, 0);
+        } else if (dnsCheckEnabled) {
+          runDnsPhase().then(finish);
         } else {
-          processing.classList.add('hidden');
-          results.classList.remove('hidden');
-          setStep(3);
+          finish();
+        }
+      }
 
-          animateCounter(statTotal, totalLines);
-          animateCounter(statDuplicates, duplicateCount);
-          animateCounter(statBlocked, blockedCount);
-          animateCounter(statDigit, digitCount);
-          animateCounter(statSkipped, skipped);
-          animateCounter(statExtracted, extractedEmails.length);
+      // Check liveness of every extracted domain, drop emails on dead ones.
+      async function runDnsPhase() {
+        processingText.textContent = 'Checking domains (DNS)...';
+        const uniqueDomains = [...new Set(extractedDomains)].filter(Boolean);
 
+        progressBar.style.width = '0%';
+        progressPercent.textContent = '0%';
+        progressLines.textContent = '0 / ' + uniqueDomains.length + ' domains';
+
+        const dead = await findDeadDomains(uniqueDomains, (doneN, total) => {
+          const p = total ? Math.round((doneN / total) * 100) : 100;
+          progressBar.style.width = p + '%';
+          progressPercent.textContent = p + '%';
+          progressLines.textContent = doneN + ' / ' + total + ' domains';
+        });
+
+        const keptEmails = [];
+        const keptDomains = [];
+        for (let i = 0; i < extractedEmails.length; i++) {
+          if (dead.has(extractedDomains[i])) {
+            deadCount++;
+            continue;
+          }
+          keptEmails.push(extractedEmails[i]);
+          keptDomains.push(extractedDomains[i]);
+        }
+        extractedEmails = keptEmails;
+        extractedDomains = keptDomains;
+      }
+
+      function finish() {
+        processing.classList.add('hidden');
+        results.classList.remove('hidden');
+        setStep(3);
+
+        statDeadCard.classList.toggle('hidden', !dnsCheckEnabled);
+
+        animateCounter(statTotal, totalLines);
+        animateCounter(statDuplicates, duplicateCount);
+        animateCounter(statBlocked, blockedCount);
+        animateCounter(statDigit, digitCount);
+        animateCounter(statSkipped, skipped);
+        if (dnsCheckEnabled) animateCounter(statDead, deadCount);
+        animateCounter(statExtracted, extractedEmails.length);
+
+        {
           const previewEmails = extractedEmails.slice(0, 10);
           const remaining = extractedEmails.length - previewEmails.length;
           previewCount.textContent =
@@ -411,11 +528,13 @@
   btnReset.addEventListener('click', () => {
     selectedFile = null;
     extractedEmails = [];
+    extractedDomains = [];
     fileInput.value = '';
 
     results.classList.add('hidden');
     processing.classList.add('hidden');
     fileInfo.classList.add('hidden');
+    optionsPanel.classList.add('hidden');
     btnExtract.classList.add('hidden');
     uploadArea.classList.remove('hidden');
 
