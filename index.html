@@ -110,18 +110,6 @@
           </div>
         </div>
 
-        <!-- Options -->
-        <div id="options" class="options hidden">
-          <label class="option-row" for="opt-dns-check">
-            <input type="checkbox" id="opt-dns-check">
-            <span class="option-check"></span>
-            <span class="option-text">
-              <span class="option-title">Skip dead domains</span>
-              <span class="option-hint">Checks MX/A records via Cloudflare DNS. Slower, and domain names (not emails) are sent to the DNS resolver.</span>
-            </span>
-          </label>
-        </div>
-
         <!-- Extract Button -->
         <button class="btn-extract hidden" id="btn-extract">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -174,10 +162,6 @@
             <div class="stat">
               <div class="stat-value stat-warn" id="stat-skipped">0</div>
               <div class="stat-label">Invalid</div>
-            </div>
-            <div class="stat" id="stat-dead-card">
-              <div class="stat-value stat-warn" id="stat-dead">0</div>
-              <div class="stat-label">Dead Domain</div>
             </div>
             <div class="stat stat-highlight">
               <div class="stat-value stat-success" id="stat-extracted">0</div>
