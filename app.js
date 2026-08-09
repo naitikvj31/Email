@@ -324,7 +324,7 @@
           if (domain) {
             const dLower = domain.toLowerCase();
             domainCounts[dLower] = (domainCounts[dLower] || 0) + 1;
-            if (domainCounts[dLower] > 3) {
+            if (domainCounts[dLower] > 1) {
               domainLimitCount++;
               continue;
             }
