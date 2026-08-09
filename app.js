@@ -79,16 +79,22 @@
     "rskdpgcollege.org"
   ].map(d => d.toLowerCase());
 
-  const BLOCKED_TLDS = [".cc", ".ru", ".jp", ".pl", ".fr", ".it"];
+  const ALLOWED_TLDS = [".com", ".net", ".in", ".ca", ".uk", ".co.in", ".co"];
 
   function isDomainBlocked(domain) {
     const d = domain.toLowerCase();
-    const dotCount = (d.match(/\./g) || []).length;
-    if (dotCount >= 2) return true;
-    if (d.includes('-')) return true;
-    for (const tld of BLOCKED_TLDS) {
-      if (d.endsWith(tld)) return true;
+    
+    let isAllowed = false;
+    for (const tld of ALLOWED_TLDS) {
+      if (d.endsWith(tld)) {
+        isAllowed = true;
+        break;
+      }
     }
+    if (!isAllowed) return true;
+
+    if (d.includes('-')) return true;
+    
     for (const blocked of BLOCKED_DOMAINS) {
       if (blocked.includes('.')) {
         if (d === blocked) return true;
