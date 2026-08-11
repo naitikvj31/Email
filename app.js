@@ -84,6 +84,9 @@
   function isDomainBlocked(domain) {
     const d = domain.toLowerCase();
     
+    // Block domains with 2 or fewer characters before the first dot (e.g., in.com, wu.com)
+    if (d.split('.')[0].length <= 2) return true;
+
     let isAllowed = false;
     for (const tld of ALLOWED_TLDS) {
       if (d.endsWith(tld)) {
