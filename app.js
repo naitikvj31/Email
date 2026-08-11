@@ -79,7 +79,7 @@
     "rskdpgcollege.org"
   ].map(d => d.toLowerCase());
 
-  const ALLOWED_TLDS = [".com", ".net", ".in", ".ca", ".uk", ".co.in", ".co"];
+  const ALLOWED_TLDS = [".com"];
 
   function isDomainBlocked(domain) {
     const d = domain.toLowerCase();
