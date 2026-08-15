@@ -76,13 +76,21 @@
     "exacomaudit.com",
     "drsowjanyaaggarwal.com",
     "cakeart.net",
-    "rskdpgcollege.org"
+    "rskdpgcollege.org",
+    "live.com",
+    "outlook.com",
+    "yahoo.com",
+    "gmail.com",
+    "google.com"
   ].map(d => d.toLowerCase());
 
   const ALLOWED_TLDS = [".com"];
 
   function isDomainBlocked(domain) {
     const d = domain.toLowerCase();
+
+    // Block domains with 2 or more dots (e.g., nyc.rr.com)
+    if ((d.match(/\./g) || []).length >= 2) return true;
     
     // Block domains with 2 or fewer characters before the first dot (e.g., in.com, wu.com)
     if (d.split('.')[0].length <= 2) return true;
