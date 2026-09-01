@@ -1,4 +1,5 @@
 # Data files — too large for GitHub
 *.txt
+!blocked_domains.txt
 !README.md
 .DS_Store

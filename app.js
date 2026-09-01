@@ -1,90 +1,33 @@
 (function () {
   'use strict';
 
-  const BLOCKED_DOMAINS = [
-    "t-online.de",
-    "online.de",
-    "web.de",
-    "u2.com",
-    "1.humail.club",
-    "chmail.ir",
-    "yandex.ru",
-    "mail.tmwlsw.com",
-    "escobarsrl.com",
-    "rambler.ru",
-    "xiangyunplay.com",
-    "miha33.com",
-    "pyrpyr.pl",
-    "icn.od.ua",
-    "thdby.com",
-    "gamerspace.online",
-    "mail",
-    "web",
-    "yahoo",
-    "hotmail",
-    "gmail",
-    "garmerspace",
-    "vnetwork",
-    "sina",
-    "gmx.de",
-    "gmx.net",
-    "mimo",
-    "mimo.org",
-    "microsoft.com",
-    "aol.com",
-    "aol.de",
-    "aol.br",
-    "freenet.de",
-    "net.de",
-    "wctc.net",
-    "sion",
-    "hive.is",
-    "mwt.net",
-    "ufba.br",
-    "telefornica.net",
-    "hawaiiantel.net",
-    "cheapnet.it",
-    "mclink.it",
-    "magenta.de",
-    "alakuafrika.com",
-    "paragoninnovation.net",
-    "dokom.net",
-    "piechulska.pl",
-    "delarra.com",
-    "vera.com.uy",
-    "csmena.com",
-    "klinikamolicki.pl",
-    "pscincorp.com",
-    "cruzio.com",
-    "leadervet.com",
-    "infowayme.com",
-    "gazeta.pl",
-    "alindatechnologies.com",
-    "uniqueradio.org",
-    "aatman.in",
-    "chancellorinsja.com",
-    "mambestudio.com",
-    "eggcorndigital.com",
-    "cozycottageco.com",
-    "jampti.com",
-    "heeals.org",
-    "cybussolutions.com",
-    "oxydom.ma",
-    "lamut.tech",
-    "amuri.net",
-    "posteo.de",
-    "exacomaudit.com",
-    "drsowjanyaaggarwal.com",
-    "cakeart.net",
-    "rskdpgcollege.org",
-    "live.com",
-    "outlook.com",
-    "yahoo.com",
-    "gmail.com",
-    "google.com"
-  ].map(d => d.toLowerCase());
+  // Blocked domains loaded from external file for easy maintenance
+  let BLOCKED_DOMAINS_SET = new Set();
+  let blockedDomainsLoaded = false;
 
-  const ALLOWED_TLDS = [".com"];
+  // Partial keyword matches (domains containing these are blocked)
+  const BLOCKED_PARTIAL_KEYWORDS = [
+    "mail", "web", "yahoo", "hotmail", "gmail",
+    "garmerspace", "vnetwork", "sina", "mimo", "sion"
+  ];
+
+  const ALLOWED_TLDS = [".com", ".in"];
+
+  // Load blocked domains from file
+  fetch('blocked_domains.txt')
+    .then(res => res.text())
+    .then(text => {
+      text.split(/\r?\n/).forEach(line => {
+        const d = line.trim().toLowerCase();
+        if (d) BLOCKED_DOMAINS_SET.add(d);
+      });
+      blockedDomainsLoaded = true;
+      console.log(`Loaded ${BLOCKED_DOMAINS_SET.size} blocked domains`);
+    })
+    .catch(err => {
+      console.warn('Could not load blocked_domains.txt:', err);
+      blockedDomainsLoaded = true;
+    });
 
   function isDomainBlocked(domain) {
     const d = domain.toLowerCase();
@@ -105,14 +48,15 @@
     if (!isAllowed) return true;
 
     if (d.includes('-')) return true;
-    
-    for (const blocked of BLOCKED_DOMAINS) {
-      if (blocked.includes('.')) {
-        if (d === blocked) return true;
-      } else {
-        if (d.includes(blocked)) return true;
-      }
+
+    // Check exact match in blocked domains Set
+    if (BLOCKED_DOMAINS_SET.has(d)) return true;
+
+    // Check partial keyword matches
+    for (const keyword of BLOCKED_PARTIAL_KEYWORDS) {
+      if (d.includes(keyword)) return true;
     }
+
     return false;
   }
 

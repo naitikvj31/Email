@@ -1,20 +1,33 @@
 #!/bin/bash
 
-# Extract lines 200000-400000, then filter for good .com emails
+# Extract lines 200000-400000, then filter for good .com/.in emails
 # Rules:
-#   - Only .com domains
+#   - Only .com and .in domains
 #   - Domain name part must be > 2 chars
 #   - No digits in domain
 #   - No hyphen in domain
-#   - No blocked domains or usernames
+#   - No blocked domains (loaded from blocked_domains.txt) or usernames
 #   - 1 email per domain max
 #   - Max 10000 results
 
-sed -n '200000,400000p' "/Users/naitikvijayvargiya/Desktop/Emailing extracing/output (4).txt" | \
-awk -F'[:;|,\t]' '
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BLOCKED_FILE="$SCRIPT_DIR/blocked_domains.txt"
+
+if [ ! -f "$BLOCKED_FILE" ]; then
+  echo "ERROR: blocked_domains.txt not found at $BLOCKED_FILE"
+  exit 1
+fi
+
+sed -n '200000,400000p' "$SCRIPT_DIR/output (4).txt" | \
+awk -F'[:;|,\t]' -v blocked_file="$BLOCKED_FILE" '
 BEGIN {
-  # Blocked domains (partial matches for those without dots, exact for those with dots)
-  split("t-online.de,online.de,web.de,u2.com,1.humail.club,chmail.ir,yandex.ru,mail.tmwlsw.com,escobarsrl.com,rambler.ru,xiangyunplay.com,miha33.com,pyrpyr.pl,icn.od.ua,thdby.com,gamerspace.online,gmx.de,gmx.net,mimo.org,microsoft.com,aol.com,aol.de,aol.br,freenet.de,net.de,wctc.net,hive.is,mwt.net,ufba.br,telefornica.net,hawaiiantel.net,cheapnet.it,mclink.it,magenta.de,alakuafrika.com,paragoninnovation.net,dokom.net,piechulska.pl,delarra.com,vera.com.uy,csmena.com,klinikamolicki.pl,pscincorp.com,cruzio.com,leadervet.com,infowayme.com,gazeta.pl,alindatechnologies.com,uniqueradio.org,aatman.in,chancellorinsja.com,mambestudio.com,eggcorndigital.com,cozycottageco.com,jampti.com,heeals.org,cybussolutions.com,oxydom.ma,lamut.tech,amuri.net,posteo.de,exacomaudit.com,drsowjanyaaggarwal.com,cakeart.net,rskdpgcollege.org", blocked_exact, ",")
+  # Load blocked domains from file
+  while ((getline line < blocked_file) > 0) {
+    gsub(/^[ \t]+|[ \t]+$/, "", line)
+    if (line != "") blocked_exact[tolower(line)] = 1
+  }
+  close(blocked_file)
+
   split("mail,web,yahoo,hotmail,gmail,garmerspace,vnetwork,sina,mimo,sion", blocked_partial, ",")
   split("admin,contact,user,hello,help,candidate,support,shop,validate,verify,office,mail,postmaster,info", blocked_users, ",")
   count = 0
@@ -38,8 +51,8 @@ BEGIN {
   # Lowercase
   em_lower = tolower(email)
 
-  # Must end with .com
-  if (em_lower !~ /\.com$/) next
+  # Must end with .com or .in
+  if (em_lower !~ /\.(com|in)$/) next
 
   # Get domain
   split(em_lower, eparts, "@")
@@ -59,14 +72,11 @@ BEGIN {
   # Block hyphens in domain
   if (domain ~ /-/) next
 
-  # Block exact domain matches
-  blocked = 0
-  for (i in blocked_exact) {
-    if (domain == blocked_exact[i]) { blocked = 1; break }
-  }
-  if (blocked) next
+  # Block exact domain matches (from file)
+  if (tolower(domain) in blocked_exact) next
 
   # Block partial domain matches
+  blocked = 0
   for (i in blocked_partial) {
     if (index(domain, blocked_partial[i]) > 0) { blocked = 1; break }
   }
@@ -91,7 +101,8 @@ BEGIN {
   print fullline
   count++
   if (count >= max) exit
-}' > "/Users/naitikvijayvargiya/Desktop/Emailing extracing/good_10k.txt"
+}' > "$SCRIPT_DIR/good_10k.txt"
 
-result_count=$(wc -l < "/Users/naitikvijayvargiya/Desktop/Emailing extracing/good_10k.txt")
+result_count=$(wc -l < "$SCRIPT_DIR/good_10k.txt")
 echo "Extracted $result_count good emails to good_10k.txt"
+
