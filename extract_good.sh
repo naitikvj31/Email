@@ -6,6 +6,7 @@
 #   - Domain name part must be > 2 chars
 #   - No digits in domain
 #   - No hyphen in domain
+#   - No digits in username (before @)
 #   - No blocked domains (loaded from blocked_domains.txt) or usernames
 #   - 1 email per domain max
 #   - Max 10000 results
@@ -82,9 +83,12 @@ BEGIN {
   }
   if (blocked) next
 
-  # Block usernames
+  # Block usernames containing digits (0-9)
   split(em_lower, uparts, "@")
   localpart = uparts[1]
+  if (localpart ~ /[0-9]/) next
+
+  # Block usernames with blocked keywords
   for (i in blocked_users) {
     if (index(localpart, blocked_users[i]) > 0) { blocked = 1; break }
   }

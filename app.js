@@ -11,7 +11,7 @@
     "garmerspace", "vnetwork", "sina", "mimo", "sion"
   ];
 
-  const ALLOWED_TLDS = [".com", ".in"];
+  const ALLOWED_TLDS = [".com", ".in", ".co.in"];
 
   // Load blocked domains from file
   fetch('blocked_domains.txt')
@@ -32,8 +32,13 @@
   function isDomainBlocked(domain) {
     const d = domain.toLowerCase();
 
-    // Block domains with 2 or more dots (e.g., nyc.rr.com)
-    if ((d.match(/\./g) || []).length >= 2) return true;
+    // Block domains with multiple dots (allow 2 dots for .co.in)
+    const dotCount = (d.match(/\./g) || []).length;
+    if (d.endsWith('.co.in')) {
+      if (dotCount >= 3) return true;
+    } else {
+      if (dotCount >= 2) return true;
+    }
     
     // Block domains with 2 or fewer characters before the first dot (e.g., in.com, wu.com)
     if (d.split('.')[0].length <= 2) return true;
@@ -72,6 +77,8 @@
 
   function isUsernameBlocked(email) {
     const localPart = email.split('@')[0].toLowerCase();
+    // Block if username (before @) contains any digits (0-9)
+    if (/[0-9]/.test(localPart)) return true;
     // Block if the localPart CONTAINS any of the blocked keywords
     return BLOCKED_USERNAMES.some(blocked => localPart.includes(blocked));
   }
